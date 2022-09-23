@@ -1,0 +1,25 @@
+html {
+  box-sizing: border-box;
+  height: 100%;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#mensaje {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%);
+  color: white;
+  font-size: 2em;
+}
