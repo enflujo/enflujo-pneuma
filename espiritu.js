@@ -1,6 +1,6 @@
 import './estilos.scss';
 import Pneuma from './Pneuma';
-const soploRapido = 'soplo-rapido.wav';
+const soploRapido = 'soplo2.wav';
 const pneuma = new Pneuma();
 
 const mensaje = document.getElementById('mensaje');
@@ -53,16 +53,18 @@ function pintar() {
   ctx.fillRect(0, 0, ancho, alto);
   ctx.beginPath();
 
-  analizador.getByteTimeDomainData(pneuma.datosAnalizador);
+  analizador.getByteFrequencyData(pneuma.datosAnalizador);
   console.log(pneuma.datosAnalizador);
   for (let i = 0; i < pneuma.tamañoBuffer; i++) {
     const v = pneuma.datosAnalizador[i] / 128;
-    const y = (v * alto) / 2;
+
+    // Invertir (multiplicar * -1) para visualizar de abajo hacia arriba
+    const y = -1 * ((v * alto) / 1.5);
 
     if (i === 0) {
       ctx.moveTo(x, y);
     } else {
-      ctx.lineTo(x, y);
+      ctx.lineTo(x, y + alto * 0.9);
     }
 
     x += pasoX;
