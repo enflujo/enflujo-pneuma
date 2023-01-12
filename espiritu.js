@@ -1,6 +1,7 @@
 import './estilos.scss';
 import Pneuma from './Pneuma';
-const soploRapido = 'soplo-rapido.wav';
+//const soploRapido = 'soplo-rapido.wav';
+const soploRapido = 'Los Días.mp3';
 const pneuma = new Pneuma();
 
 const mensaje = document.getElementById('mensaje');
@@ -22,9 +23,8 @@ ctx.fillRect(0, 0, ancho, alto);
 async function inicio() {
   const fuente = await pneuma.cargarAudio(soploRapido);
   analizador = pneuma.crearAnalizador(fuente);
-
+  console.log(pneuma.tamañoBuffer);
   pasoX = ancho / pneuma.tamañoBuffer;
-  console.log(pasoX);
   mensaje.innerText = 'Audio Cargado';
 
   document.body.onclick = () => {
@@ -46,32 +46,47 @@ async function inicio() {
 // fuente.connect(pneuma.ctx.destination);
 // fuente.start();
 inicio();
+let min = Infinity;
+let max = -Infinity;
+let tick = 0;
+const vel = 2;
 
 function pintar() {
-  let x = 0;
+  if (tick === vel) {
+    let x = 0;
+    ctx.fillRect(0, 0, ancho, alto);
+    ctx.beginPath();
 
-  ctx.fillRect(0, 0, ancho, alto);
-  ctx.beginPath();
+    analizador.getByteTimeDomainData(pneuma.datosAnalizador);
+    const t0 = performance.now();
+    for (let i = 0; i < pneuma.tamañoBuffer; i++) {
+      const v = pneuma.datosAnalizador[i] / 128;
+      const y = (v * alto) / 2;
+      //console.log(pneuma.datosAnalizador[i], v);
+      max = pneuma.datosAnalizador[i] > max ? pneuma.datosAnalizador[i] : max;
+      min = pneuma.datosAnalizador[i] < min ? pneuma.datosAnalizador[i] : min;
 
-  analizador.getByteTimeDomainData(pneuma.datosAnalizador);
-  console.log(pneuma.datosAnalizador);
-  for (let i = 0; i < pneuma.tamañoBuffer; i++) {
-    const v = pneuma.datosAnalizador[i] / 128;
-    const y = (v * alto) / 2;
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
 
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
+      x += pasoX;
     }
 
-    x += pasoX;
+    ctx.lineTo(ancho, alto / 2);
+    ctx.stroke();
+
+    const t1 = performance.now();
+    mensaje.innerText = `min: ${min}, max: ${max} \ntiempo: ${(t1 - t0) / 1000}`;
+    tick = 0;
   }
 
-  ctx.lineTo(ancho, alto / 2);
-  ctx.stroke();
-
+  tick++;
   if (animar) {
     requestAnimationFrame(pintar);
+  } else {
+    console.log(min, max);
   }
 }
