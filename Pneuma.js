@@ -19,8 +19,8 @@ export default class Pneuma {
     const analizador = this.ctx.createAnalyser();
     analizador.fftSize = 2048;
     this.tamañoBuffer = analizador.frequencyBinCount;
-    this.datosAnalizador = new Uint8Array(this.tamañoBuffer);
-    analizador.getByteTimeDomainData(this.datosAnalizador);
+    this.datosAnalizador = new Float32Array(this.tamañoBuffer);
+    analizador.getFloatTimeDomainData(this.datosAnalizador);
 
     fuente.connect(analizador);
     return analizador;
