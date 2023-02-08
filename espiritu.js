@@ -143,7 +143,7 @@ function pintar() {
     ctx.beginPath();
     ctx.globalCompositeOperation = 'darken';
 
-    analizador.getFloatTimeDomainData(pneuma.datosAnalizador);
+    analizador.getByteTimeDomainData(pneuma.datosAnalizador);
     // console.log(pneuma.datosAnalizador);
     const t0 = performance.now();
     let tocaUmbralAbajo = false;
@@ -151,8 +151,9 @@ function pintar() {
 
     for (let i = 0; i < pneuma.tamañoBuffer; i++) {
       const punto = pneuma.datosAnalizador[i];
-      const v = punto * (alto / 2);
-      const y = v + alto / 2;
+
+      const v = ((255 / punto) * alto) / 2;
+      const y = v - alto / 2;
       //console.log(pneuma.datosAnalizador[i], v);
 
       max = punto > max ? punto : max;
