@@ -6,21 +6,28 @@ const pneuma = new Pneuma();
 
 const mensaje = document.getElementById('mensaje');
 const lienzo = document.getElementById('lienzo');
+const lienzoFrecuencia = document.getElementById('lienzoFrecuencia');
 const ctx = lienzo.getContext('2d');
+const ctxFrecuencia = lienzoFrecuencia.getContext('2d');
 let audioCargado = false;
 let reproduciendo = false;
 let pasoX = 0;
 let analizador;
 let animar = false;
 
-const ancho = (lienzo.width = window.innerWidth);
-const alto = (lienzo.height = window.innerHeight);
+const ancho = (lienzo.width = lienzoFrecuencia.width = window.innerWidth);
+const alto = (lienzo.height = lienzoFrecuencia.height = window.innerHeight);
 const centroX = ancho / 2;
 const centroY = alto / 2;
 ctx.fillStyle = '#faf4f4';
 ctx.lineWidth = 2;
 ctx.strokeStyle = '#e0b1cb';
 ctx.fillRect(0, 0, ancho, alto);
+
+ctxFrecuencia.fillStyle = 'rgba(255, 255, 255, 0.5)';
+ctxFrecuencia.lineWidth = 2;
+ctxFrecuencia.strokeStyle = '#e0b1cb';
+ctxFrecuencia.fillRect(0, 0, ancho, alto);
 
 const fotogramasCiclo = 7;
 const fotogramasLinea1 = 7;
@@ -40,7 +47,6 @@ let centroImgXFondo = 0;
 let centroImgYFondo = 0;
 
 //fondo
-
 for (let i = 0; i <= fotogramasCiclo; i++) {
   const img = new Image();
   img.onload = () => {
@@ -90,7 +96,7 @@ async function inicio() {
   console.log(ciclo, fondo, linea1);
   const fuente = await pneuma.cargarAudio(soploRapido);
   analizador = pneuma.crearAnalizador(fuente);
-  console.log(pneuma.tamañoBuffer);
+  //console.log(pneuma.tamañoBuffer);
   pasoX = ancho / pneuma.tamañoBuffer;
   mensaje.innerText = 'Audio Cargado';
 
@@ -99,6 +105,8 @@ async function inicio() {
       animar = false;
     };
     animar = true;
+
+    pintarFrecuencia();
     pintar();
 
     fuente.start();
@@ -112,6 +120,7 @@ async function inicio() {
 
 // fuente.connect(pneuma.ctx.destination);
 // fuente.start();
+
 inicio();
 let min = Infinity;
 let max = -Infinity;
@@ -223,7 +232,26 @@ function pintar() {
   tick++;
   if (animar) {
     requestAnimationFrame(pintar);
+    requestAnimationFrame(pintarFrecuencia);
   } else {
     console.log(min, max);
+  }
+}
+
+function pintarFrecuencia() {
+  analizador.getByteFrequencyData(pneuma.datosAnalizador);
+  ctxFrecuencia.clearRect(0, 0, ancho, alto);
+
+  const anchoBarra = (ancho / pneuma.tamañoBuffer) * 2.5;
+  let altoBarra;
+  let x = 0;
+
+  for (let i = 0; i < pneuma.tamañoBuffer; i++) {
+    altoBarra = pneuma.datosAnalizador[i];
+
+    ctxFrecuencia.fillStyle = `rgb(150, 50, ${altoBarra}, 0.5)`;
+    ctxFrecuencia.fillRect(x, alto - altoBarra / 2, anchoBarra, altoBarra / 2);
+
+    x += anchoBarra + 1;
   }
 }

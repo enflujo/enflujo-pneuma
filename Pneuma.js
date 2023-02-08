@@ -15,12 +15,15 @@ export default class Pneuma {
     return fuente;
   }
 
+  /* Quité la función getByteTimeDomainData, que no estaba haciendo mucho ahí
+  y la dejé en Pneuma para no tener que crear más de un analizador
+  */
   crearAnalizador(fuente) {
     const analizador = this.ctx.createAnalyser();
     analizador.fftSize = 2048;
     this.tamañoBuffer = analizador.frequencyBinCount;
     this.datosAnalizador = new Uint8Array(this.tamañoBuffer);
-    analizador.getByteTimeDomainData(this.datosAnalizador);
+    // analizador.getByteTimeDomainData(this.datosAnalizador);
 
     fuente.connect(analizador);
     return analizador;
