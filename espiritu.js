@@ -1,7 +1,7 @@
 import './estilos.scss';
 import Pneuma from './Pneuma';
 //const soploRapido = 'soplo-rapido.wav';
-const soploRapido = 'Los Días.mp3';
+const soploRapido = 'prueba2.mp3';
 const pneuma = new Pneuma();
 
 const mensaje = document.getElementById('mensaje');
@@ -12,7 +12,8 @@ const ctxFrecuencia = lienzoFrecuencia.getContext('2d');
 let audioCargado = false;
 let reproduciendo = false;
 let pasoX = 0;
-let analizador;
+let analizadorL;
+let analizadorR;
 let animar = false;
 
 const ancho = (lienzo.width = lienzoFrecuencia.width = window.innerWidth);
@@ -95,7 +96,8 @@ for (let i = 0; i <= fotogramasLinea1; i++) {
 async function inicio() {
   console.log(ciclo, fondo, linea1);
   const fuente = await pneuma.cargarAudio(soploRapido);
-  analizador = pneuma.crearAnalizador(fuente);
+  analizadorL = pneuma.crearAnalizador(fuente, 0);
+  analizadorR = pneuma.crearAnalizador(fuente, 1);
   //console.log(pneuma.tamañoBuffer);
   pasoX = ancho / pneuma.tamañoBuffer;
   mensaje.innerText = 'Audio Cargado';
@@ -106,8 +108,8 @@ async function inicio() {
     };
     animar = true;
 
-    pintarFrecuencia();
     pintar();
+    mensaje.innerText = '';
 
     fuente.start();
   };
@@ -125,7 +127,7 @@ inicio();
 let min = Infinity;
 let max = -Infinity;
 let tick = 0;
-const vel = 3;
+const vel = 1;
 let fotogramaActual = 0;
 let fotogramaActualFondo = 0;
 let fotogramaActualLinea1 = 0;
@@ -134,113 +136,83 @@ const umbralArriba = 0.3;
 let animarGolpe = false;
 
 function pintar() {
-  if (tick === vel) {
-    let x = 0;
-    ctx.drawImage(
-      fondo[fotogramaActualFondo],
-      0,
-      0,
-      anchoImgFondo,
-      altoImgFondo,
-      centroX - centroImgXFondo,
-      centroY - centroImgYFondo,
-      anchoImgFondo,
-      altoImgFondo
-    );
+  // if (tick === vel) {
+  ctx.clearRect(0, 0, lienzo.width, lienzo.height);
+  ctxFrecuencia.clearRect(0, 0, ancho, alto);
+  pintarL();
+  pintarR();
+  pintarFrecuenciaL();
+  pintarFrecuenciaR();
+  //   tick = 0;
+  // }
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.globalCompositeOperation = 'darken';
-
-    analizador.getByteTimeDomainData(pneuma.datosAnalizador);
-    // console.log(pneuma.datosAnalizador);
-    const t0 = performance.now();
-    let tocaUmbralAbajo = false;
-    let tocaUmbralArriba = false;
-
-    for (let i = 0; i < pneuma.tamañoBuffer; i++) {
-      const punto = pneuma.datosAnalizador[i];
-
-      const v = ((255 / punto) * alto) / 2;
-      const y = v - alto / 2;
-      //console.log(pneuma.datosAnalizador[i], v);
-
-      max = punto > max ? punto : max;
-      min = punto < min ? punto : min;
-
-      if (punto < umbralAbajo) tocaUmbralAbajo = true;
-      if (punto > umbralArriba) tocaUmbralArriba = true;
-
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-
-      x += pasoX;
-    }
-
-    if (tocaUmbralAbajo && tocaUmbralArriba) {
-      animarGolpe = true;
-    }
-
-    if (!animarGolpe) {
-      ctx.drawImage(
-        ciclo[fotogramaActual],
-        0,
-        0,
-        anchoImg,
-        altoImg,
-        centroX - centroImgX,
-        centroY - centroImgY,
-        anchoImg,
-        altoImg
-      );
-      fotogramaActual = (fotogramaActual + 1) % 7;
-    } else {
-      ctx.drawImage(
-        linea1[fotogramaActualLinea1],
-        0,
-        0,
-        anchoImg,
-        altoImg,
-        centroX - centroImgX,
-        centroY - centroImgY,
-        anchoImg,
-        altoImg
-      );
-
-      if (fotogramaActualLinea1 < 7) {
-        fotogramaActualLinea1 = fotogramaActualLinea1 + 1;
-      } else {
-        animarGolpe = false;
-        fotogramaActualLinea1 = 0;
-      }
-    }
-
-    fotogramaActualFondo = (fotogramaActualFondo + 1) % 3;
-
-    ctx.lineTo(ancho, alto / 2);
-    ctx.stroke();
-    ctx.restore();
-
-    const t1 = performance.now();
-    mensaje.innerText = `min: ${min}, max: ${max} \n ${(t1 - t0) / 1000}`;
-    tick = 0;
-  }
-
-  tick++;
+  // tick++;
   if (animar) {
     requestAnimationFrame(pintar);
-    requestAnimationFrame(pintarFrecuencia);
   } else {
     console.log(min, max);
   }
 }
 
-function pintarFrecuencia() {
-  analizador.getByteFrequencyData(pneuma.datosAnalizador);
-  ctxFrecuencia.clearRect(0, 0, ancho, alto);
+// POR HACER: Unir las dos funciones en una
+function pintarL() {
+  let x = 0;
+  ctx.save();
+  ctx.beginPath();
+  ctx.strokeStyle = '#1ec4cd';
+
+  analizadorL.getByteTimeDomainData(pneuma.datosAnalizador);
+
+  for (let i = 0; i < pneuma.tamañoBuffer; i++) {
+    const punto = pneuma.datosAnalizador[i];
+
+    const v = ((255 / punto) * alto) / 2;
+    const y = v - alto / 1.5;
+
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+
+    x += pasoX;
+  }
+
+  ctx.lineTo(ancho, alto / 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function pintarR() {
+  let x = 0;
+
+  ctx.save();
+  ctx.beginPath();
+
+  analizadorR.getByteTimeDomainData(pneuma.datosAnalizador);
+
+  for (let i = 0; i < pneuma.tamañoBuffer; i++) {
+    const punto = pneuma.datosAnalizador[i];
+
+    const v = ((255 / punto) * alto) / 2;
+    const y = v - alto / 2;
+
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+
+    x += pasoX;
+  }
+
+  ctx.lineTo(ancho, alto / 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function pintarFrecuenciaL() {
+  analizadorL.getByteFrequencyData(pneuma.datosAnalizador);
 
   const anchoBarra = (ancho / pneuma.tamañoBuffer) * 2.5;
   let altoBarra;
@@ -251,6 +223,23 @@ function pintarFrecuencia() {
 
     ctxFrecuencia.fillStyle = `rgb(150, 50, ${altoBarra}, 0.5)`;
     ctxFrecuencia.fillRect(x, alto - altoBarra / 2, anchoBarra, altoBarra / 2);
+
+    x += anchoBarra + 1;
+  }
+}
+
+function pintarFrecuenciaR() {
+  analizadorR.getByteFrequencyData(pneuma.datosAnalizador);
+
+  const anchoBarra = (ancho / pneuma.tamañoBuffer) * 2.5;
+  let altoBarra;
+  let x = 0;
+
+  for (let i = 0; i < pneuma.tamañoBuffer; i++) {
+    altoBarra = pneuma.datosAnalizador[i];
+
+    ctxFrecuencia.fillStyle = `rgb(10, 150, ${altoBarra}, 0.5)`;
+    ctxFrecuencia.fillRect(x, 0, anchoBarra, altoBarra / 2);
 
     x += anchoBarra + 1;
   }
