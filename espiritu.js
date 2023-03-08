@@ -94,16 +94,21 @@ for (let i = 0; i <= fotogramasLinea1; i++) {
 }
 
 async function inicio() {
-  console.log(ciclo, fondo, linea1);
-  const fuente = await pneuma.cargarAudio(soploRapido);
-  analizadorL = pneuma.crearAnalizador(fuente, 0);
-  analizadorR = pneuma.crearAnalizador(fuente, 1);
+  //console.log(ciclo, fondo, linea1);
+  const fuenteInterfaz = await pneuma.crearFuenteConMic('interfaz');
+  const fuenteMic = await pneuma.crearFuenteConMic('microfono');
+
+  /**
+   * Crear dos analizadores, uno para cada canal L y R.
+   */
+  analizadorL = pneuma.crearAnalizador(fuenteInterfaz, 0);
+  analizadorR = pneuma.crearAnalizador(fuenteMic, 1);
   //console.log(pneuma.tamañoBuffer);
   pasoX = ancho / pneuma.tamañoBuffer;
   mensaje.innerText = 'Audio Cargado';
 
   document.body.onclick = () => {
-    fuente.onended = () => {
+    fuenteInterfaz.onended = () => {
       animar = false;
     };
     animar = true;
@@ -111,7 +116,7 @@ async function inicio() {
     pintar();
     mensaje.innerText = '';
 
-    fuente.start();
+    // fuente.start();
   };
 }
 

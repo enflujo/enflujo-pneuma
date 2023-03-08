@@ -8,7 +8,8 @@ export default class Pneuma {
     return this.ctx.createOscillator();
   }
 
-  crearFuenteConArchivo(buffer) {
+  // Función para crear fuente desde archivo
+  async crearFuenteConArchivo(buffer) {
     const fuente = new AudioBufferSourceNode(this.ctx);
     fuente.buffer = buffer;
     fuente.connect(this.ctx.destination);
@@ -16,10 +17,55 @@ export default class Pneuma {
     return fuente;
   }
 
+  /**
+   * Función para crear fuente desde entradas externas de audio (micrófonos, interfaces).
+   * @param {string} entrada 'interfaz' o 'microfono' para elegir la entrada de audio.
+   */
+  async crearFuenteConMic(entrada) {
+    const scarlett = 'fabd64e8943bf541c093f953dc75a199a0b2abe1d83a012518e433159704f509';
+    const solapa = '08fff73e79a69980fac392a396384cf5340ee5ad28ee624b946301d14fb54a9c';
+
+    let entradaElegida;
+
+    if (entrada === 'interfaz') {
+      entradaElegida = scarlett;
+    }
+    if (entrada === 'microfono') {
+      entradaElegida = solapa;
+    }
+
+    /** Elegir la entrada que corresponde con el id de 'entrada'
+     * PORHACER: Elegir por el nombre en un menú.
+     */
+    const flujo = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        deviceId: {
+          exact: entradaElegida,
+        },
+      },
+      video: false,
+    });
+
+    const fuente = this.ctx.createMediaStreamSource(flujo);
+
+    fuente.connect(this.ctx.destination);
+
+    /** Imprimir dispositivos disponibles */
+    // console.log(navigator.mediaDevices.enumerateDevices());
+
+    return fuente;
+  }
+
+  /**
+   * Crear un analizador y conectarlo con una fuente y dividir separar los canales
+   * L de R para trabajarlos por separado.
+   * Por ahora solo se pueden separar si la fuente viene de un archivo de audio.
+   * @param {MediaStreamSource | AudioBufferSourceNode} fuente (MediaStreamSource o AudioBufferSourceNode)
+   * @param {Number} canal (0, 1)
+   */
   crearAnalizador(fuente, canal) {
-    ////////////////////************ */
-    // Crear un divisor ('spliter') para separar L y R.
-    // Y un 'merger' para volver a juntar ambas señales.
+    /* Crear un divisor ('spliter') para separar L y R.
+    Y un 'merger' para volver a juntar ambas señales. */
     const divisor = this.ctx.createChannelSplitter(2);
     const merger = this.ctx.createChannelMerger(2);
 
@@ -29,7 +75,7 @@ export default class Pneuma {
     // Conectar la fuente al divisor
     fuente.connect(divisor);
 
-    // Variar la ganancia
+    // Variar la ganancia de cada canal (L (0) y R (1)) por separado
     if (canal === 0) {
       nodoGanancia.gain.setValueAtTime(0.9, this.ctx.currentTime);
       nodoGanancia.connect(merger, 0, 0);
@@ -39,19 +85,11 @@ export default class Pneuma {
       nodoGanancia.connect(merger, 0, 1);
       divisor.connect(nodoGanancia, 1);
     }
-    // Variar la ganancia del canal izquierdo solamente conectando a la entrada 0
-    // del divisor.
-
-    // Conectar el divisor de vuelta a la segunda entrada del 'merger' (1) para
-    //invertir los canales, reversando la imagen estéreo.
-
-    /////////////////
 
     const analizador = this.ctx.createAnalyser();
     analizador.fftSize = 2048;
     this.tamañoBuffer = analizador.frequencyBinCount;
     this.datosAnalizador = new Uint8Array(this.tamañoBuffer);
-    // analizador.getByteTimeDomainData(this.datosAnalizador);
 
     merger.connect(analizador);
     return analizador;
