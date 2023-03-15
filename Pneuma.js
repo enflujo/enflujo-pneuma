@@ -22,38 +22,29 @@ export default class Pneuma {
    * @param {string} entrada 'interfaz' o 'microfono' para elegir la entrada de audio.
    */
   async crearFuenteConMic(entrada) {
-    const scarlett = 'fabd64e8943bf541c093f953dc75a199a0b2abe1d83a012518e433159704f509';
-    const solapa = '08fff73e79a69980fac392a396384cf5340ee5ad28ee624b946301d14fb54a9c';
-
-    let entradaElegida;
-
-    if (entrada === 'interfaz') {
-      entradaElegida = scarlett;
-    }
-    if (entrada === 'microfono') {
-      entradaElegida = solapa;
-    }
-
-    /** Elegir la entrada que corresponde con el id de 'entrada'
-     * PORHACER: Elegir por el nombre en un menú.
-     */
-    const flujo = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        deviceId: {
-          exact: entradaElegida,
-        },
-      },
-      video: false,
+    const dispositivosConectados = await navigator.mediaDevices.enumerateDevices();
+    console.log(dispositivosConectados);
+    const dispositivo = dispositivosConectados.find(({ kind, label }) => {
+      return kind === 'audioinput' && label.toLowerCase().includes(entrada);
     });
 
-    const fuente = this.ctx.createMediaStreamSource(flujo);
+    if (dispositivo) {
+      const flujo = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          deviceId: {
+            exact: dispositivo.deviceId,
+          },
+        },
+        video: false,
+      });
+      const ctx = new AudioContext();
 
-    fuente.connect(this.ctx.destination);
-
-    /** Imprimir dispositivos disponibles */
-    // console.log(navigator.mediaDevices.enumerateDevices());
-
-    return fuente;
+      const fuente = ctx.createMediaStreamSource(flujo);
+      fuente.connect(ctx.destination);
+      return { ctx, fuente };
+    } else {
+      console.error(`No encontró la entrada ${entrada}`);
+    }
   }
 
   /**
@@ -63,36 +54,21 @@ export default class Pneuma {
    * @param {MediaStreamSource | AudioBufferSourceNode} fuente (MediaStreamSource o AudioBufferSourceNode)
    * @param {Number} canal (0, 1)
    */
-  crearAnalizador(fuente, canal) {
-    /* Crear un divisor ('spliter') para separar L y R.
-    Y un 'merger' para volver a juntar ambas señales. */
-    const divisor = this.ctx.createChannelSplitter(2);
-    const merger = this.ctx.createChannelMerger(2);
-
-    // Crear un nodo para variar la ganancia
-    const nodoGanancia = this.ctx.createGain();
-
-    // Conectar la fuente al divisor
-    fuente.connect(divisor);
-
-    // Variar la ganancia de cada canal (L (0) y R (1)) por separado
-    if (canal === 0) {
-      nodoGanancia.gain.setValueAtTime(0.9, this.ctx.currentTime);
-      nodoGanancia.connect(merger, 0, 0);
-      divisor.connect(nodoGanancia, 0);
-    } else if (canal === 1) {
-      nodoGanancia.gain.setValueAtTime(0.9, this.ctx.currentTime);
-      nodoGanancia.connect(merger, 0, 1);
-      divisor.connect(nodoGanancia, 1);
-    }
-
-    const analizador = this.ctx.createAnalyser();
+  crearAnalizador(interfaz) {
+    const { ctx, fuente } = interfaz;
+    const analizador = ctx.createAnalyser();
     analizador.fftSize = 2048;
-    this.tamañoBuffer = analizador.frequencyBinCount;
-    this.datosAnalizador = new Uint8Array(this.tamañoBuffer);
+    const tamañoBuffer = analizador.frequencyBinCount;
 
-    merger.connect(analizador);
-    return analizador;
+    /** Datos para trabajar con getByteTimeDomainData y getByteFrequencyData */
+    //this.datosAnalizador = new Uint8Array(this.tamañoBuffer);
+
+    /** Datos para trabajar con getFloatTimeDomainData y getFloatFrequencyData */
+    const datosAnalizador = new Float32Array(tamañoBuffer);
+
+    fuente.connect(analizador);
+
+    return Object.assign(interfaz, { analizador, datosAnalizador, tamañoBuffer });
   }
 
   async cargarAudio(url) {

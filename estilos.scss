@@ -24,8 +24,11 @@ body {
   font-size: 2em;
 }
 
-#lienzoFrecuencia {
+canvas {
   position: absolute;
   top: 0;
   left: 0;
+  display: inline-block;
+  vertical-align: bottom;
+  margin: 0;
 }
