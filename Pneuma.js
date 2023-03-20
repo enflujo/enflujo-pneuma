@@ -1,3 +1,5 @@
+
+
 export default class Pneuma {
   constructor() {
     const ContextoAudio = window.AudioContext || window.webkitAudioContext;
@@ -16,6 +18,13 @@ export default class Pneuma {
 
     return fuente;
   }
+
+
+
+
+
+
+  
 
   /**
    * Función para crear fuente desde entradas externas de audio (micrófonos, interfaces).
@@ -70,6 +79,11 @@ export default class Pneuma {
 
     return Object.assign(interfaz, { analizador, datosAnalizador, tamañoBuffer });
   }
+
+
+  
+ 
+
 
   async cargarAudio(url) {
     const audioCrudo = await fetch(url).then((respuesta) => respuesta.arrayBuffer());

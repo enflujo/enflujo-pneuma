@@ -24,6 +24,15 @@ body {
   font-size: 2em;
 }
 
+#sss {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  transform: translate(-50%);
+  color: rgb(169, 169, 169);
+  font-size: 2em;
+}
+
 canvas {
   position: absolute;
   top: 0;
